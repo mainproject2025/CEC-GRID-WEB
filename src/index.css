@@ -1,0 +1,28 @@
+@font-face {
+  font-family: Poppins-reg;
+  src: url("../src/assets/fonts/Poppins-Regular.ttf");
+}
+
+@font-face {
+  font-family: Poppins-med;
+  src: url("../src/assets/fonts/Poppins-Medium.ttf");
+}
+
+@font-face {
+  font-family: Poppins-semibold;
+  src: url("../src/assets/fonts/Poppins-SemiBold.ttf");
+}
+
+@font-face {
+  font-family: Poppins-bold;
+  src: url("../src/assets/fonts/Poppins-Bold.ttf");
+}
+
+@import "tailwindcss";
+
+@theme {
+  --font-Preg: Poppins-reg, sans-serif;
+  --font-Pmed: Poppins-med, sans-serif;
+  --font-Psemibold: Poppins-semibold, sans-serif;
+  --font-Pbold: Poppins-bold, sans-serif;
+}
