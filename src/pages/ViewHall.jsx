@@ -12,7 +12,7 @@ const ViewHall = () => {
   useEffect(() => {
     const fetchHall = async () => {
       try {
-        const res = await fetch(`http://localhost:5001/halls`);
+        const res = await fetch(`https://cec-grd-backend.onrender.com/halls`);
         const json = await res.json();
 
         const found = json.data.find((h) => h.id === id);

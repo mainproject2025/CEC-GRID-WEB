@@ -47,7 +47,7 @@ const HallManagement = () => {
   useEffect(() => {
     const fetchHalls = async () => {
       try {
-        const res = await fetch("http://localhost:5001/halls");
+        const res = await fetch("https://cec-grd-backend.onrender.com/halls");
         const data = await res.json();
         setHallsData(data.data || []);
       } catch (err) {
@@ -355,7 +355,7 @@ const HallManagement = () => {
             onClose={() => setDeleteHall(null)}
             onDelete={async (id) => {
               try {
-                await fetch(`http://localhost:5001/halls/${id}`, {
+                await fetch(`https://cec-grd-backend.onrender.com/halls/${id}`, {
                   method: "DELETE",
                 });
 

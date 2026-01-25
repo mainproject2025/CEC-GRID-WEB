@@ -19,7 +19,7 @@ const SeatingArrangements = () => {
   useEffect(() => {
     const fetchExams = async () => {
       try {
-        const res = await fetch("http://localhost:5001/FetchExamDetails");
+        const res = await fetch("https://cec-grd-backend.onrender.com/FetchExamDetails");
 
         if (!res.ok) throw new Error("Failed to fetch exams");
 
@@ -37,7 +37,7 @@ const SeatingArrangements = () => {
   const togglePublishExam = async (examId, value) => {
     try {
       const res = await fetch(
-        `http://localhost:5001/FetchExamDetails/${examId}/publish`,
+        `https://cec-grd-backend.onrender.com/FetchExamDetails/${examId}/publish`,
         {
           method: "PATCH",
           headers: {
@@ -91,7 +91,7 @@ const SeatingArrangements = () => {
       }
     } else {
       try {
-        const res = await fetch("http://localhost:5001/GeneratePdfElective", {
+        const res = await fetch("https://cec-grd-backend.onrender.com/GeneratePdfElective", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ examId }),

@@ -40,7 +40,7 @@ const CreateSA = () => {
   };
 
   async function createNotification() {
-    await fetch("http://localhost:5001/notification/create", {
+    await fetch("https://cec-grd-backend.onrender.com/notification/create", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -111,7 +111,7 @@ const CreateSA = () => {
       // Your existing API logic
       if (selectedYears.length > 1 && seatingType === "Normal") {
         const response = await fetch(
-          "http://localhost:5001/TwoGenerateCommon",
+          "https://cec-grd-backend.onrender.com/TwoGenerateCommon",
           {
             method: "POST",
             body: formData,
@@ -142,7 +142,7 @@ const CreateSA = () => {
         }
       } else if (selectedYears.length == 1 && seatingType === "Normal") {
         const response = await fetch(
-          "http://localhost:5001/singleGenerateCommon",
+          "https://cec-grd-backend.onrender.com/singleGenerateCommon",
           {
             method: "POST",
             body: formData,
@@ -173,7 +173,7 @@ const CreateSA = () => {
         }
       } else if (selectedYears.length > 1 && seatingType !== "Normal") {
         const response = await fetch(
-          "http://localhost:5001/TwoGenerateElective",
+          "https://cec-grd-backend.onrender.com/TwoGenerateElective",
           {
             method: "POST",
             body: formData,
@@ -204,7 +204,7 @@ const CreateSA = () => {
         }
       } else {
         const response = await fetch(
-          "http://localhost:5001/singleGenerateElective",
+          "https://cec-grd-backend.onrender.com/singleGenerateElective",
           {
             method: "POST",
             body: formData,
