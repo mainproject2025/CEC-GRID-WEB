@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import jsPDF from "jspdf";
+import html2pdf from "html2pdf.js";
 import { useNavigate } from "react-router-dom";
 import {
   Plus,
@@ -59,66 +61,159 @@ const SeatingArrangements = () => {
     }
   };
 
-  const downloadPdfs = async (examId, isElective) => {
-    console.log(isElective);
-    if (!isElective) {
-      try {
-        const res = await fetch("https://cec-grd-backend.onrender.com/MakePdfCommon", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ examId }),
-        });
 
-        if (!res.ok) {
-          throw new Error("Failed to download ZIP");
-        }
 
-        // ✅ IMPORTANT: use blob(), NOT json()
-        const blob = await res.blob();
+const downloadPdfs = async (examId, isElective) => {
+  try {
+    /* =============================
+       1️⃣ FETCH SAVED HTML
+    ============================= */
 
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
+    const url = isElective
+      ? "https://cec-grd-backend.onrender.com/GeneratePdfElective"
+      : "https://cec-grd-backend.onrender.com/MakePdfCommon";
 
-        a.href = url;
-        a.download = `Exam_${examId}_PDFs.zip`;
-        document.body.appendChild(a);
-        a.click();
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ examId }),
+    });
 
-        a.remove();
-        window.URL.revokeObjectURL(url);
-      } catch (err) {
-        console.error("Download error:", err);
-      }
-    } else {
-      try {
-        const res = await fetch("https://cec-grd-backend.onrender.com/GeneratePdfElective", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ examId }),
-        });
+    if (!res.ok) throw new Error("Failed to fetch HTML");
 
-        if (!res.ok) {
-          throw new Error("Failed to download ZIP");
-        }
+    const data = await res.json();
 
-        // ✅ IMPORTANT: use blob(), NOT json()
-        const blob = await res.blob();
+    const halls = data.halls || data.rooms;
+    const summary = data.summary || data.summaryHtml;
 
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-
-        a.href = url;
-        a.download = `Exam_${examId}_PDFs.zip`;
-        document.body.appendChild(a);
-        a.click();
-
-        a.remove();
-        window.URL.revokeObjectURL(url);
-      } catch (err) {
-        console.error("Download error:", err);
-      }
+    if (!halls || !summary) {
+      throw new Error("Invalid HTML");
     }
-  };
+
+    /* =============================
+       OPEN PRINT WINDOW
+    ============================= */
+
+    const printWindow = window.open("", "_blank");
+
+    if (!printWindow) {
+      alert("Popup blocked. Allow popups.");
+      return;
+    }
+
+    /* =============================
+       HELPER: CHECK IF HALL HAS DATA
+    ============================= */
+
+    const hasContent = (html) => {
+      const temp = document.createElement("div");
+      temp.innerHTML = html;
+
+      // Get visible text
+      const text = temp.textContent.replace(/\s+/g, "");
+
+      return text.length > 50; // threshold
+    };
+
+    /* =============================
+       BUILD DOCUMENT
+    ============================= */
+
+    let fullHtml = `
+      <html>
+      <head>
+        <title>Exam ${examId}</title>
+
+        <style>
+          @media print {
+            body {
+              margin: 20mm;
+              font-family: Arial;
+            }
+
+            table {
+              width: 100%;
+              border-collapse: collapse;
+            }
+
+            tr, td, th {
+              page-break-inside: avoid;
+            }
+
+            .page-break {
+              page-break-before: always;
+            }
+          }
+        </style>
+      </head>
+
+      <body>
+    `;
+
+    let pageCount = 0;
+
+    /* =============================
+       ADD NON-EMPTY HALLS
+    ============================= */
+
+    for (const hallName of Object.keys(halls)) {
+      const html = halls[hallName];
+
+      // Skip empty halls
+      if (!hasContent(html)) {
+        console.log("Skipping empty hall:", hallName);
+        continue;
+      }
+
+      // Page break except first
+      if (pageCount > 0) {
+        fullHtml += `<div class="page-break"></div>`;
+      }
+
+      fullHtml += `
+        ${html}
+      `;
+
+      pageCount++;
+    }
+
+    /* =============================
+       ADD SUMMARY (IF EXISTS)
+    ============================= */
+
+    if (hasContent(summary)) {
+      if (pageCount > 0) {
+        fullHtml += `<div class="page-break"></div>`;
+      }
+
+      fullHtml += `
+        ${summary}
+      `;
+    }
+
+    fullHtml += `
+      </body>
+      </html>
+    `;
+
+    /* =============================
+       PRINT
+    ============================= */
+
+    printWindow.document.open();
+    printWindow.document.write(fullHtml);
+    printWindow.document.close();
+
+    printWindow.onload = () => {
+      printWindow.focus();
+      printWindow.print();
+    };
+  } catch (err) {
+    console.error("PDF generation failed:", err);
+    alert("Failed to generate PDF");
+  }
+};
+
 
   const displayedActivities = showAll
     ? seatingActivities
