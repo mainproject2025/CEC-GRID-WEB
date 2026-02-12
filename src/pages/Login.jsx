@@ -34,7 +34,7 @@ export default function Login() {
       console.log(idToken);
       
   
-      const res = await fetch("https://cec-grd-backend.onrender.com/auth/login", {
+      const res = await fetch("http://localhost:5001/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ idToken }),

@@ -5,6 +5,9 @@ import SeatingArrangements from "./pages/SeatingArrangements";
 import CreateSA from "./pages/CreateSA";
 import HallManagement from "./pages/HallManagement";
 import Notifications from "./pages/Notifications";
+import HelpPage from "./pages/HelpPage";
+import AddNewAdmin from "./pages/AddNewAdmin";
+
 
 const Layout = () => {
   return (
@@ -23,6 +26,9 @@ const Layout = () => {
           <Route path="create-sa" element={<CreateSA />} />
           <Route path="hall-management" element={<HallManagement />} />
           <Route path="notifications" element={<Notifications />} />
+          <Route path="add-admin" element={<AddNewAdmin />} />
+          <Route path="help" element={<HelpPage />} />
+
         </Routes>
       </main>
     </div>

@@ -2,9 +2,11 @@ import React, { useState, useRef } from "react";
 import { ArrowLeft, Upload, X, FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
+import { useData } from "../context/DataContext";
 
 const CreateSA = () => {
   const navigate = useNavigate();
+  const { fetchExams } = useData();
 
   const [examName, setExamName] = useState("");
   const [seatingType, setSeatingType] = useState("");
@@ -40,7 +42,7 @@ const CreateSA = () => {
   };
 
   async function createNotification() {
-    await fetch("https://cec-grd-backend.onrender.com/notification/create", {
+    await fetch("http://localhost:5001/notification/create", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -97,8 +99,8 @@ const CreateSA = () => {
     formData.append("seatingType", seatingType);
     formData.append("years", JSON.stringify(selectedYears));
     formData.append("type", seatingType);
-    formData.append("mode",mode);
-    formData.append("examDate",examDate.toString())
+    formData.append("mode", mode);
+    formData.append("examDate", examDate.toString()); // Keep toString() just in case
 
     // Handle Student Files (Single or Multiple)
     studentFiles.forEach((file) => {
@@ -107,135 +109,60 @@ const CreateSA = () => {
 
     if (hallFile) formData.append("halls", hallFile);
 
-    try {
-      // Your existing API logic
-      if (selectedYears.length > 1 && seatingType === "Normal") {
-        const response = await fetch(
-          "https://cec-grd-backend.onrender.com/TwoGenerateCommon",
-          {
-            method: "POST",
-            body: formData,
-          },
-        );
-
-        if (!response.ok) {
-          setisSubmit(false);
-          Swal.fire({
-            icon: "error",
-            title: "Generation Failed",
-            text: "Unable to generate seating arrangement PDFs.",
-            confirmButtonColor: "#DC2626",
-          });
-          return;
-        } else {
-          setisSubmit(false);
-          await createNotification();
-
-          Swal.fire({
-            icon: "success",
-            title: "Seating Generated ",
-            text: "Hall-wise seating arrangement has been generated successfully.",
-            confirmButtonText: "Great!",
-            confirmButtonColor: "#2D7FF9",
-            background: "#F8FAFC",
-          });
-        }
-      } else if (selectedYears.length == 1 && seatingType === "Normal") {
-        const response = await fetch(
-          "https://cec-grd-backend.onrender.com/singleGenerateCommon",
-          {
-            method: "POST",
-            body: formData,
-          },
-        );
-
-        if (!response.ok) {
-          setisSubmit(false);
-          Swal.fire({
-            icon: "error",
-            title: "Generation Failed",
-            text: "Unable to generate seating arrangement PDFs.",
-            confirmButtonColor: "#DC2626",
-          });
-          return;
-        } else {
-          setisSubmit(false);
-          await createNotification();
-
-          Swal.fire({
-            icon: "success",
-            title: "Seating Generated ",
-            text: "Hall-wise seating arrangement has been generated successfully.",
-            confirmButtonText: "Great!",
-            confirmButtonColor: "#2D7FF9",
-            background: "#F8FAFC",
-          });
-        }
-      } else if (selectedYears.length > 1 && seatingType !== "Normal") {
-        const response = await fetch(
-          "https://cec-grd-backend.onrender.com/TwoGenerateElective",
-          {
-            method: "POST",
-            body: formData,
-          },
-        );
-
-        if (!response.ok) {
-          setisSubmit(false);
-          Swal.fire({
-            icon: "error",
-            title: "Generation Failed",
-            text: "Unable to generate seating arrangement PDFs.",
-            confirmButtonColor: "#DC2626",
-          });
-          return;
-        } else {
-          setisSubmit(false);
-          await createNotification();
-
-          Swal.fire({
-            icon: "success",
-            title: "Seating Generated ",
-            text: "Hall-wise seating arrangement has been generated successfully.",
-            confirmButtonText: "Great!",
-            confirmButtonColor: "#2D7FF9",
-            background: "#F8FAFC",
-          });
-        }
+    const handleResponse = async (response) => {
+      if (!response.ok) {
+        setisSubmit(false);
+        Swal.fire({
+          icon: "error",
+          title: "Generation Failed",
+          text: "Unable to generate seating arrangement PDFs.",
+          confirmButtonColor: "#DC2626",
+        });
       } else {
-        const response = await fetch(
-          "https://cec-grd-backend.onrender.com/singleGenerateElective",
-          {
-            method: "POST",
-            body: formData,
-          },
-        );
+        setisSubmit(false);
+        await createNotification();
+        fetchExams(true); // Refresh exams list
 
-        if (!response.ok) {
-          setisSubmit(false);
-          Swal.fire({
-            icon: "error",
-            title: "Generation Failed",
-            text: "Unable to generate seating arrangement PDFs.",
-            confirmButtonColor: "#DC2626",
-          });
-          return;
-        } else {
-          setisSubmit(false);
-          await createNotification();
+        Swal.fire({
+          icon: "success",
+          title: "Seating Generated ",
+          text: "Hall-wise seating arrangement has been generated successfully.",
+          confirmButtonText: "Great!",
+          confirmButtonColor: "#2D7FF9",
+          background: "#F8FAFC",
+        });
+      }
+    };
 
-          Swal.fire({
-            icon: "success",
-            title: "Seating Generated ",
-            text: "Hall-wise seating arrangement has been generated successfully.",
-            confirmButtonText: "Great!",
-            confirmButtonColor: "#2D7FF9",
-            background: "#F8FAFC",
-          });
-        }
+    try {
+      if (selectedYears.length > 1 && seatingType === "Normal") {
+        const response = await fetch("http://localhost:5001/TwoGenerateCommon", {
+          method: "POST",
+          body: formData,
+        });
+        await handleResponse(response);
+      } else if (selectedYears.length == 1 && seatingType === "Normal") {
+        const response = await fetch("http://localhost:5001/singleGenerateCommon", {
+          method: "POST",
+          body: formData,
+        });
+        await handleResponse(response);
+      } else if (selectedYears.length > 1 && seatingType !== "Normal") {
+        const response = await fetch("http://localhost:5001/TwoGenerateElective", {
+          method: "POST",
+          body: formData,
+        });
+        await handleResponse(response);
+      } else {
+        const response = await fetch("http://localhost:5001/singleGenerateElective", {
+          method: "POST",
+          body: formData,
+        });
+        await handleResponse(response);
       }
     } catch (err) {
       console.error(err);
+      setisSubmit(false);
       alert("Server error");
     }
   };
@@ -317,11 +244,10 @@ const CreateSA = () => {
                       key={year}
                       type="button"
                       onClick={() => handleYearToggle(year)}
-                      className={`px-6 py-2 rounded-lg text-[14px] font-Pmed transition-colors ${
-                        selectedYears.includes(year)
-                          ? "bg-[#2D7FF9] text-white"
-                          : "border border-[#E6E6E6] text-[#737373] hover:border-[#2D7FF9]"
-                      }`}
+                      className={`px-6 py-2 rounded-lg text-[14px] font-Pmed transition-colors ${selectedYears.includes(year)
+                        ? "bg-[#2D7FF9] text-white"
+                        : "border border-[#E6E6E6] text-[#737373] hover:border-[#2D7FF9]"
+                        }`}
                     >
                       {year}
                     </button>
@@ -384,11 +310,10 @@ const CreateSA = () => {
 
                 <div
                   className={`border border-dashed rounded-lg px-6 py-4 text-center transition-colors relative
-                  ${
-                    studentFiles.length > 0
+                  ${studentFiles.length > 0
                       ? "border-green-500 bg-green-50"
                       : "border-[#E6E6E6] hover:border-[#2D7FF9]"
-                  }`}
+                    }`}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => {
                     e.preventDefault();
@@ -488,11 +413,10 @@ const CreateSA = () => {
 
                 <div
                   className={`border border-dashed rounded-lg px-6 py-4 text-center transition-colors
-                  ${
-                    hallFile
+                  ${hallFile
                       ? "border-green-500 bg-green-50"
                       : "border-[#E6E6E6] hover:border-[#2D7FF9]"
-                  }`}
+                    }`}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => {
                     e.preventDefault();

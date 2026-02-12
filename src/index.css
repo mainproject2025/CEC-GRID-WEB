@@ -25,4 +25,15 @@
   --font-Pmed: Poppins-med, sans-serif;
   --font-Psemibold: Poppins-semibold, sans-serif;
   --font-Pbold: Poppins-bold, sans-serif;
+  
+  @keyframes spin-reverse {
+    from {
+      transform: rotate(360deg);
+    }
+    to {
+      transform: rotate(0deg);
+    }
+  }
+  
+  --animate-spin-reverse: spin-reverse 1s linear infinite;
 }

@@ -12,7 +12,7 @@ import {
 import AddHall from "../components/AddHall";
 import EditHall from "../components/EditHall";
 import DeleteHall from "../components/DeleteHall";
-
+import { useData } from "../context/DataContext";
 
 
 /* SORT OPTIONS */
@@ -25,13 +25,20 @@ const SORT_OPTIONS = [
   { key: "statusMaintenance", label: "Status (Maintenance First)" },
 ];
 
+// ... inside component ...
 const HallManagement = () => {
   const navigate = useNavigate();
+  const { halls, loadingHalls, errorHalls, fetchHalls, setHalls } = useData();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("nameAsc");
   const [openSort, setOpenSort] = useState(false);
 
-  const [hallsData, setHallsData] = useState([]);
+  // We'll use local state for filtered/sorted view but base it on 'halls' from context
+  const hallsData = halls;
+  // Note: we can map specific context methods if we want to update the context state directly
+  // For add/delete/update, we might want to manually update the context state OR force a refetch.
+  // The existing implementation updated local state 'hallsData'. We should allow updating context 'setHalls'.
 
   // 🔑 Firestore IDs are strings → start empty
   const [selectedHalls, setSelectedHalls] = useState([]);
@@ -45,25 +52,21 @@ const HallManagement = () => {
         FETCH HALLS
   ========================== */
   useEffect(() => {
-    const fetchHalls = async () => {
-      try {
-        const res = await fetch("https://cec-grd-backend.onrender.com/halls");
-        const data = await res.json();
-        setHallsData(data.data || []);
-      } catch (err) {
-        console.error("Failed to fetch halls", err);
-      }
-    };
-
     fetchHalls();
-  }, []);
+  }, [fetchHalls]);
 
   /* Auto select all halls after fetch (same behavior as before) */
   useEffect(() => {
-    if (hallsData.length) {
+    if (hallsData.length > 0 && selectedHalls.length === 0) {
+      // Only select all if nothing selected yet? Or always reset?
+      // The original code reset on data change. Let's keep it consistent but careful not to loop.
+      // Actually, original code: if (hallsData.length) { setSelectedHalls(...) } on [hallsData] change.
+      // This implies every time we fetch/update, we select all.
       setSelectedHalls(hallsData.map((h) => h.id));
     }
   }, [hallsData]);
+  // Warning: if hallsData is stable reference from context, this runs once. If it changes strictly, it runs.
+
 
   /* =========================
         SEARCH
@@ -299,11 +302,10 @@ const HallManagement = () => {
 
                   <td className="px-6 py-4">
                     <span
-                      className={`px-3 py-1 rounded-full text-sm font-Pmed ${
-                        hall.status === "active"
-                          ? "bg-[#E6F4EA] text-[#137333]"
-                          : "bg-[#FDECEC] text-[#B3261E]"
-                      }`}
+                      className={`px-3 py-1 rounded-full text-sm font-Pmed ${hall.status === "active"
+                        ? "bg-[#E6F4EA] text-[#137333]"
+                        : "bg-[#FDECEC] text-[#B3261E]"
+                        }`}
                     >
                       {hall.status === "active" ? "Available" : "Maintenance"}
                     </span>
@@ -355,7 +357,7 @@ const HallManagement = () => {
             onClose={() => setDeleteHall(null)}
             onDelete={async (id) => {
               try {
-                await fetch(`https://cec-grd-backend.onrender.com/halls/${id}`, {
+                await fetch(`http://localhost:5001/halls/${id}`, {
                   method: "DELETE",
                 });
 

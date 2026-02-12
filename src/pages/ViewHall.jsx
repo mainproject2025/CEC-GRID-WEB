@@ -1,31 +1,30 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import RoomVisualizer from "./RoomVisualizer";
+import { useData } from "../context/DataContext";
 
 const ViewHall = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { halls, loadingHalls, fetchHalls } = useData();
 
   const [hall, setHall] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchHall = async () => {
-      try {
-        const res = await fetch(`https://cec-grd-backend.onrender.com/halls`);
-        const json = await res.json();
+    fetchHalls();
+  }, [fetchHalls]);
 
-        const found = json.data.find((h) => h.id === id);
-        setHall(found || null);
-      } catch (err) {
-        console.error("Failed to fetch hall", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  useEffect(() => {
+    if (halls.length > 0) {
+      const found = halls.find((h) => h.id === id);
+      setHall(found || null);
+    }
+  }, [halls, id]);
 
-    fetchHall();
-  }, [id]);
+  const loading = loadingHalls && !hall;
+  // Should show loading if fetching and we don't have the hall. 
+  // If we have the hall (maybe from previous fetch), we can show it immediately even if re-fetching in background?
+  // Current logic: loadingHalls is true on fetch. 
 
   if (loading) {
     return (

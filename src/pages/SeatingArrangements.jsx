@@ -9,37 +9,33 @@ import {
   Clock,
   FileText,
   SquareCheck,
+  Trash2,
 } from "lucide-react";
+import Swal from "sweetalert2";
 
 import SA from "../assets/images/SA-PLAN IMG.svg";
 import { DualRingSpinner, GradientBar } from "../components/Loaders";
-
+import { useData } from "../context/DataContext";
+// ...
 const SeatingArrangements = () => {
+  const { exams, loadingExams, errorExams, fetchExams } = useData();
+
   const [showAll, setShowAll] = useState(false);
-  const [seatingActivities, setseatingActivities] = useState([]);
+  // mapping context exams to local var 'seatingActivities' to keep rest of code same
+  const seatingActivities = exams;
+  // Use context loading/error, but mapped to local names if needed
+  const loading = loadingExams;
+  const error = errorExams;
 
   useEffect(() => {
-    const fetchExams = async () => {
-      try {
-        const res = await fetch("https://cec-grd-backend.onrender.com/FetchExamDetails");
-
-        if (!res.ok) throw new Error("Failed to fetch exams");
-
-        const data = await res.json();
-
-        setseatingActivities(data.exams); // ✅ correct
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
     fetchExams();
-  }, []);
+  }, [fetchExams]);
+
 
   const togglePublishExam = async (examId, value) => {
     try {
       const res = await fetch(
-        `https://cec-grd-backend.onrender.com/FetchExamDetails/${examId}/publish`,
+        `http://localhost:5001/FetchExamDetails/${examId}/publish`,
         {
           method: "PATCH",
           headers: {
@@ -63,63 +59,104 @@ const SeatingArrangements = () => {
 
 
 
-const downloadPdfs = async (examId, isElective) => {
-  try {
-    /* =============================
-       1️⃣ FETCH SAVED HTML
-    ============================= */
+  const handleDeleteExam = async (examId) => {
+    try {
+      const result = await Swal.fire({
+        title: "Are you sure?",
+        text: "You won't be able to revert this!",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#d33",
+        cancelButtonColor: "#3085d6",
+        confirmButtonText: "Yes, delete it!",
+      });
 
-    const url = isElective
-      ? "https://cec-grd-backend.onrender.com/GeneratePdfElective"
-      : "https://cec-grd-backend.onrender.com/MakePdfCommon";
+      if (result.isConfirmed) {
+        // Assuming your backend supports DELETE /deleteExam/:id
+        const response = await fetch(`http://localhost:5001/deleteExam/${examId}`, {
+          method: "DELETE",
+        });
 
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ examId }),
-    });
+        if (response.ok) {
+          await Swal.fire("Deleted!", "The exam has been deleted.", "success");
+          fetchExams(true); // Refresh list
+        } else {
+          try {
+            // Fallback attempt with FetchExamDetails if first fails (common pattern guess)
+            const res2 = await fetch(`http://localhost:5001/deleteExam/${examId}`, { method: 'DELETE' });
+            if (res2.ok) {
+              await Swal.fire("Deleted!", "The exam has been deleted.", "success");
+              fetchExams(true);
+              return;
+            }
+          } catch (e) { }
 
-    if (!res.ok) throw new Error("Failed to fetch HTML");
-
-    const data = await res.json();
-
-    const halls = data.halls || data.rooms;
-    const summary = data.summary || data.summaryHtml;
-
-    if (!halls || !summary) {
-      throw new Error("Invalid HTML");
+          throw new Error("Failed to delete exam");
+        }
+      }
+    } catch (error) {
+      console.error("Delete failed:", error);
+      Swal.fire("Error!", "Failed to delete the exam. Ensure backend supports deletion.", "error");
     }
+  };
 
-    /* =============================
-       OPEN PRINT WINDOW
-    ============================= */
+  const downloadPdfs = async (examId, isElective) => {
+    try {
+      /* =============================
+         1️⃣ FETCH SAVED HTML
+      ============================= */
 
-    const printWindow = window.open("", "_blank");
+      const url = isElective
+        ? "http://localhost:5001/GeneratePdfElective"
+        : "http://localhost:5001/MakePdfCommon";
 
-    if (!printWindow) {
-      alert("Popup blocked. Allow popups.");
-      return;
-    }
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ examId }),
+      });
 
-    /* =============================
-       HELPER: CHECK IF HALL HAS DATA
-    ============================= */
+      if (!res.ok) throw new Error("Failed to fetch HTML");
 
-    const hasContent = (html) => {
-      const temp = document.createElement("div");
-      temp.innerHTML = html;
+      const data = await res.json();
 
-      // Get visible text
-      const text = temp.textContent.replace(/\s+/g, "");
+      const halls = data.halls || data.rooms;
+      const summary = data.summary || data.summaryHtml;
 
-      return text.length > 50; // threshold
-    };
+      if (!halls || !summary) {
+        throw new Error("Invalid HTML");
+      }
 
-    /* =============================
-       BUILD DOCUMENT
-    ============================= */
+      /* =============================
+         OPEN PRINT WINDOW
+      ============================= */
 
-    let fullHtml = `
+      const printWindow = window.open("", "_blank");
+
+      if (!printWindow) {
+        alert("Popup blocked. Allow popups.");
+        return;
+      }
+
+      /* =============================
+         HELPER: CHECK IF HALL HAS DATA
+      ============================= */
+
+      const hasContent = (html) => {
+        const temp = document.createElement("div");
+        temp.innerHTML = html;
+
+        // Get visible text
+        const text = temp.textContent.replace(/\s+/g, "");
+
+        return text.length > 50; // threshold
+      };
+
+      /* =============================
+         BUILD DOCUMENT
+      ============================= */
+
+      let fullHtml = `
       <html>
       <head>
         <title>Exam ${examId}</title>
@@ -150,69 +187,69 @@ const downloadPdfs = async (examId, isElective) => {
       <body>
     `;
 
-    let pageCount = 0;
+      let pageCount = 0;
 
-    /* =============================
-       ADD NON-EMPTY HALLS
-    ============================= */
+      /* =============================
+         ADD NON-EMPTY HALLS
+      ============================= */
 
-    for (const hallName of Object.keys(halls)) {
-      const html = halls[hallName];
+      for (const hallName of Object.keys(halls)) {
+        const html = halls[hallName];
 
-      // Skip empty halls
-      if (!hasContent(html)) {
-        console.log("Skipping empty hall:", hallName);
-        continue;
-      }
+        // Skip empty halls
+        if (!hasContent(html)) {
+          console.log("Skipping empty hall:", hallName);
+          continue;
+        }
 
-      // Page break except first
-      if (pageCount > 0) {
-        fullHtml += `<div class="page-break"></div>`;
-      }
+        // Page break except first
+        if (pageCount > 0) {
+          fullHtml += `<div class="page-break"></div>`;
+        }
 
-      fullHtml += `
+        fullHtml += `
         ${html}
       `;
 
-      pageCount++;
-    }
+        pageCount++;
+      }
 
-    /* =============================
-       ADD SUMMARY (IF EXISTS)
-    ============================= */
+      /* =============================
+         ADD SUMMARY (IF EXISTS)
+      ============================= */
 
-    if (hasContent(summary)) {
-      if (pageCount > 0) {
-        fullHtml += `<div class="page-break"></div>`;
+      if (hasContent(summary)) {
+        if (pageCount > 0) {
+          fullHtml += `<div class="page-break"></div>`;
+        }
+
+        fullHtml += `
+        ${summary}
+      `;
       }
 
       fullHtml += `
-        ${summary}
-      `;
-    }
-
-    fullHtml += `
       </body>
       </html>
     `;
 
-    /* =============================
-       PRINT
-    ============================= */
+      /* =============================
+         PRINT
+      ============================= */
 
-    printWindow.document.open();
-    printWindow.document.write(fullHtml);
-    printWindow.document.close();
+      printWindow.document.open();
+      printWindow.document.write(fullHtml);
+      printWindow.document.close();
 
-    printWindow.onload = () => {
-      printWindow.focus();
-      printWindow.print();
-    };
-  } catch (err) {
-    console.error("PDF generation failed:", err);
-    alert("Failed to generate PDF");
-  }
-};
+      printWindow.onload = () => {
+        printWindow.focus();
+        printWindow.print();
+      };
+    } catch (err) {
+      console.error("PDF generation failed:", err);
+      alert("Failed to generate PDF");
+    }
+  };
 
 
   const displayedActivities = showAll
@@ -267,18 +304,35 @@ const downloadPdfs = async (examId, isElective) => {
 
         {/* Recent Activity */}
         <div>
-          <div className="flex items-center gap-2 mb-6">
-            <Clock size={20} className="text-[#737373]" />
-            <h2 className="text-[18px] font-Pmed text-[#262626]">
-              Recent activity
-            </h2>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <Clock size={20} className="text-[#737373]" />
+              <h2 className="text-[18px] font-Pmed text-[#262626]">
+                Recent activity
+              </h2>
+            </div>
+            <button
+              onClick={() => fetchExams(true)}
+              className="text-sm text-[#2D7FF9] hover:underline font-Pmed"
+            >
+              Refresh
+            </button>
           </div>
 
           <div className="space-y-4">
-            {displayedActivities.length != 0 ? (
+
+            {loading ? (
+              <div className="flex justify-center p-8">
+                <DualRingSpinner />
+              </div>
+            ) : error ? (
+              <div className="text-center text-red-500 p-4">
+                Error: {error}
+              </div>
+            ) : displayedActivities.length > 0 ? (
               displayedActivities.map((activity) => (
                 <div
-                  key={activity.Examid}
+                  key={activity.examId || activity.Examid}
                   className="bg-white border border-[#E6E6E6] rounded-lg p-6"
                 >
                   <div className="flex justify-between items-start">
@@ -292,7 +346,7 @@ const downloadPdfs = async (examId, isElective) => {
                       </div>
 
                       <div className="flex gap-2 mb-3 flex-wrap">
-                        {JSON.parse(activity.sems).map((sem) => (
+                        {activity.sems && JSON.parse(activity.sems).map((sem) => (
                           <span
                             key={sem}
                             className="px-3 py-1 bg-[#F1F5F9] text-[#262626] rounded text-[13px] font-Preg"
@@ -313,11 +367,11 @@ const downloadPdfs = async (examId, isElective) => {
                         <button
                           className="flex items-center cursor-pointer gap-2 px-4 py-2 border border-[#2D7FF9] text-[#2D7FF9] rounded-lg hover:bg-[#F1F5FF] transition-colors"
                           onClick={() => {
-                            togglePublishExam(activity.examId);
+                            navigate(`/customize/${activity.examId}`);
                           }}
                         >
                           <Eye size={16} />
-                          Publish
+                          Customize
                         </button>
                       ) : (
                         <p className="flex items-center cursor-not-allowed gap-2 px-4 py-2 border border-[#11ff25] text-[#11ff25] rounded-lg hover:bg-[#F1F5FF] transition-colors">
@@ -329,20 +383,26 @@ const downloadPdfs = async (examId, isElective) => {
                       <button
                         className="flex items-center gap-2 px-4 py-2 bg-[#2D7FF9] text-white rounded-lg hover:bg-[#2750AE] transition-colors"
                         onClick={() => {
-                          console.log(activity.examId);
-
                           downloadPdfs(activity.examId, activity.isElective);
                         }}
                       >
                         <Download size={16} />
                         Download
                       </button>
+
+                      <button
+                        className="flex items-center gap-2 px-3 py-2 border border-red-500 text-red-500 rounded-lg hover:bg-red-50 transition-colors"
+                        onClick={() => handleDeleteExam(activity.examId)}
+                        title="Delete Exam"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
                   </div>
                 </div>
               ))
             ) : (
-              <p>Nothing to Show </p>
+              <p className="text-center text-gray-500 py-4">Nothing to Show</p>
             )}
             <div className="flex justify-end mt-6">
               <button
@@ -352,9 +412,10 @@ const downloadPdfs = async (examId, isElective) => {
                 {showAll ? "Show less" : "View all"}
               </button>
             </div>
-          </div>
 
-          {/* View All */}
+
+            {/* View All */}
+          </div>
         </div>
       </div>
     </div>
