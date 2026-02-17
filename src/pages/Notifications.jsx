@@ -19,7 +19,7 @@ const Notifications = () => {
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      const res = await fetch("http://localhost:5001/notification");
+      const res = await fetch("https://cec-grd-backend.onrender.com//notification");
       const data = await res.json();
 
       const formatted = data.map((n) => ({

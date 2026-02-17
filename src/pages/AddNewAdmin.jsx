@@ -53,7 +53,7 @@ const AddNewAdmin = () => {
 
         try {
             const token = localStorage.getItem("cecgrid-token");
-            const response = await fetch("http://localhost:5001/auth/signUp", {
+            const response = await fetch("https://cec-grd-backend.onrender.com//auth/signUp", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -115,7 +115,7 @@ const AddNewAdmin = () => {
         if (result.isConfirmed) {
             try {
                 const token = localStorage.getItem("cecgrid-token");
-                const response = await fetch(`http://localhost:5001/auth/adminDelete/${uid}`, {
+                const response = await fetch(`https://cec-grd-backend.onrender.com//auth/adminDelete/${uid}`, {
                     method: 'DELETE',
                     headers: {
                         "Authorization": token ? `Bearer ${token}` : "",

@@ -42,7 +42,7 @@ const EditHall = ({ hall, onClose ,onUpdate}) => {
   };
 
   try {
-    await fetch(`http://localhost:5001/halls/${hall.id}`, {
+    await fetch(`https://cec-grd-backend.onrender.com//halls/${hall.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updatedHall),

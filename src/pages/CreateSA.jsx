@@ -42,7 +42,7 @@ const CreateSA = () => {
   };
 
   async function createNotification() {
-    await fetch("http://localhost:5001/notification/create", {
+    await fetch("https://cec-grd-backend.onrender.com//notification/create", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -136,25 +136,25 @@ const CreateSA = () => {
 
     try {
       if (selectedYears.length > 1 && seatingType === "Normal") {
-        const response = await fetch("http://localhost:5001/TwoGenerateCommon", {
+        const response = await fetch("https://cec-grd-backend.onrender.com//TwoGenerateCommon", {
           method: "POST",
           body: formData,
         });
         await handleResponse(response);
       } else if (selectedYears.length == 1 && seatingType === "Normal") {
-        const response = await fetch("http://localhost:5001/singleGenerateCommon", {
+        const response = await fetch("https://cec-grd-backend.onrender.com//singleGenerateCommon", {
           method: "POST",
           body: formData,
         });
         await handleResponse(response);
       } else if (selectedYears.length > 1 && seatingType !== "Normal") {
-        const response = await fetch("http://localhost:5001/TwoGenerateElective", {
+        const response = await fetch("https://cec-grd-backend.onrender.com//TwoGenerateElective", {
           method: "POST",
           body: formData,
         });
         await handleResponse(response);
       } else {
-        const response = await fetch("http://localhost:5001/singleGenerateElective", {
+        const response = await fetch("https://cec-grd-backend.onrender.com//singleGenerateElective", {
           method: "POST",
           body: formData,
         });

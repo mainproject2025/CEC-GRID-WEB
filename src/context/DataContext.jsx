@@ -38,7 +38,7 @@ export const DataProvider = ({ children }) => {
         setLoadingHalls(true);
         setErrorHalls(null);
         try {
-            const res = await fetch("http://localhost:5001/halls");
+            const res = await fetch("https://cec-grd-backend.onrender.com//halls");
             const data = await res.json();
             setHalls(data.data || []);
             setHallsTimestamp(now);
@@ -61,7 +61,7 @@ export const DataProvider = ({ children }) => {
         setErrorAdmins(null);
         try {
             const token = localStorage.getItem("cecgrid-token");
-            const response = await fetch("http://localhost:5001/auth/admins", {
+            const response = await fetch("https://cec-grd-backend.onrender.com//auth/admins", {
                 headers: {
                     "Authorization": token ? `Bearer ${token}` : "",
                 }
@@ -97,7 +97,7 @@ export const DataProvider = ({ children }) => {
         try {
             // AbortController logic omitted for simplicity in global context, 
             // but could be added if needed.
-            const res = await fetch("http://localhost:5001/FetchExamDetails");
+            const res = await fetch("https://cec-grd-backend.onrender.com//FetchExamDetails");
             if (!res.ok) throw new Error("Failed to fetch exams");
             const data = await res.json();
             setExams(data.exams || []);
