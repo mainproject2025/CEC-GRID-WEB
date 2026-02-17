@@ -49,7 +49,7 @@ const AddHall = ({ onClose }) => {
     };
 
     try {
-      const res = await fetch("https://cec-grd-backend.onrender.com//halls", {
+      const res = await fetch("https://cec-grd-backend.onrender.com/halls", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(hallData),

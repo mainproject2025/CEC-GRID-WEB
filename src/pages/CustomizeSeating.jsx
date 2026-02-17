@@ -34,7 +34,7 @@ const CustomizeSeating = () => {
         try {
             setLoading(true);
             // API call to fetch exam details
-            const res = await fetch(`https://cec-grd-backend.onrender.com//fetchDetails/${examId}`);
+            const res = await fetch(`https://cec-grd-backend.onrender.com/fetchDetails/${examId}`);
             const data = await res.json();
             console.log("Fetched Exam Data:", data);
 
@@ -352,7 +352,7 @@ const CustomizeSeating = () => {
             // POST to backend
             // Assuming endpoint is /updateSeating or similar, but user only gave fetch.
             // I will use a placeholder /updateDetails/${examId} based on common patterns.
-            const res = await fetch(`https://cec-grd-backend.onrender.com//updateExamDetails/`, {
+            const res = await fetch(`https://cec-grd-backend.onrender.com/updateExamDetails/`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
