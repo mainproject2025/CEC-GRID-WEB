@@ -357,7 +357,7 @@ const HallManagement = () => {
             onClose={() => setDeleteHall(null)}
             onDelete={async (id) => {
               try {
-                await fetch(`https://cec-grd-backend.onrender.com/halls/${id}`, {
+                await fetch(`http://localhost:5001/halls/${id}`, {
                   method: "DELETE",
                 });
 

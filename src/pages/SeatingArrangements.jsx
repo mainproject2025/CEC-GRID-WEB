@@ -35,7 +35,7 @@ const SeatingArrangements = () => {
   const togglePublishExam = async (examId, value) => {
     try {
       const res = await fetch(
-        `https://cec-grd-backend.onrender.com/FetchExamDetails/${examId}/publish`,
+        `http://localhost:5001/FetchExamDetails/${examId}/publish`,
         {
           method: "PATCH",
           headers: {
@@ -73,7 +73,7 @@ const SeatingArrangements = () => {
 
       if (result.isConfirmed) {
         // Assuming your backend supports DELETE /deleteExam/:id
-        const response = await fetch(`https://cec-grd-backend.onrender.com/deleteExam/${examId}`, {
+        const response = await fetch(`http://localhost:5001/deleteExam/${examId}`, {
           method: "DELETE",
         });
 
@@ -83,7 +83,7 @@ const SeatingArrangements = () => {
         } else {
           try {
             // Fallback attempt with FetchExamDetails if first fails (common pattern guess)
-            const res2 = await fetch(`https://cec-grd-backend.onrender.com/deleteExam/${examId}`, { method: 'DELETE' });
+            const res2 = await fetch(`http://localhost:5001/deleteExam/${examId}`, { method: 'DELETE' });
             if (res2.ok) {
               await Swal.fire("Deleted!", "The exam has been deleted.", "success");
               fetchExams(true);
@@ -107,9 +107,12 @@ const SeatingArrangements = () => {
       ============================= */
 
       const url = isElective
-        ? "https://cec-grd-backend.onrender.com/GeneratePdfElective"
-        : "https://cec-grd-backend.onrender.com/MakePdfCommon";
+        ? "http://localhost:5001/GeneratePdfElective"
+        : "http://localhost:5001/MakePdfCommon";
 
+
+      console.log(isElective);
+      
       const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

@@ -6,12 +6,12 @@ import { getAuth } from "firebase/auth";
    (SAFE TO EXPOSE)
 ================================ */
 const firebaseConfig = {
-  apiKey: "AIzaSyArqcQ4iOw2UCVxaYpZCcbEF0aNbmVL5K8",
-  authDomain: "cec-grid-58825.firebaseapp.com",
-  projectId: "cec-grid-58825",
-  storageBucket: "cec-grid-58825.firebasestorage.app",
-  messagingSenderId: "209257727580",
-  appId: "1:209257727580:web:35ce9eda9a5e35bba08899"
+  apiKey: "AIzaSyDsb4Gl2MARCXrCRbejhgmFGoPQnCsSLyg",
+  authDomain: "test-cec-grid.firebaseapp.com",
+  projectId: "test-cec-grid",
+  storageBucket: "test-cec-grid.firebasestorage.app",
+  messagingSenderId: "305642168913",
+  appId: "1:305642168913:web:f827be7d9b52126a178e70"
 };
 
 /* ================================
