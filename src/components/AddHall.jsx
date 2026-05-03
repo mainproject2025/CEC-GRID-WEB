@@ -49,7 +49,7 @@ const AddHall = ({ onClose }) => {
     };
 
     try {
-      const res = await fetch("https://cec-grd-backend.onrender.com/halls", {
+      const res = await fetch("http://localhost:5001/halls", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(hallData),
@@ -179,11 +179,10 @@ const AddHall = ({ onClose }) => {
               className="mt-2 w-full flex justify-between items-center rounded-xl border border-slate-300 px-4 py-2.5 hover:bg-slate-50"
             >
               <span
-                className={`font-Pmed ${
-                  status === "active"
+                className={`font-Pmed ${status === "active"
                     ? "text-emerald-600"
                     : "text-rose-600"
-                }`}
+                  }`}
               >
                 {status === "active" ? "Available" : "Maintenance"}
               </span>

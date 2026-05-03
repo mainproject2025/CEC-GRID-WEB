@@ -225,6 +225,9 @@ export default function Login() {
 
       {/* RIGHT */}
       <div className="w-1/2 p-10">
+      <div>
+        
+      </div>
         <img
           src={pic}
           className="w-full h-full object-cover rounded-[40px]"

@@ -19,7 +19,7 @@ const Notifications = () => {
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      const res = await fetch("https://cec-grd-backend.onrender.com/notification");
+      const res = await fetch("http://localhost:5001/notification");
       const data = await res.json();
 
       const formatted = data.map((n) => ({
@@ -41,7 +41,7 @@ const Notifications = () => {
     fetchNotifications();
   }, []);
 
-  
+
   /* ================================
      ICON PICKER
   ================================ */
@@ -58,7 +58,7 @@ const Notifications = () => {
     }
   };
 
- 
+
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] px-8 py-6">
@@ -72,7 +72,7 @@ const Notifications = () => {
             </h1>
 
             <button
-               
+
               className="flex items-center gap-2 px-4 py-2 text-[#2D7FF9] hover:bg-[#F1F5FF] rounded-lg font-Pmed"
             >
               <Check size={18} />
@@ -98,11 +98,10 @@ const Notifications = () => {
           {notifications.map((n) => (
             <div
               key={n.id}
-              className={`border rounded-lg p-6 transition-colors ${
-                n.read
+              className={`border rounded-lg p-6 transition-colors ${n.read
                   ? "bg-white border-[#E6E6E6]"
                   : "bg-[#F1F5FF] border-[#2D7FF9]"
-              }`}
+                }`}
             >
               <div className="flex gap-4">
 

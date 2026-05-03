@@ -7,6 +7,8 @@ import HallManagement from "./pages/HallManagement";
 import Notifications from "./pages/Notifications";
 import HelpPage from "./pages/HelpPage";
 import AddNewAdmin from "./pages/AddNewAdmin";
+import AboutPage from "./pages/AboutPage";
+import CSVEditor from "./pages/CSVEditor";
 
 
 const Layout = () => {
@@ -28,6 +30,8 @@ const Layout = () => {
           <Route path="notifications" element={<Notifications />} />
           <Route path="add-admin" element={<AddNewAdmin />} />
           <Route path="help" element={<HelpPage />} />
+          <Route path="about" element={<AboutPage />} />
+          <Route path="csv-editor" element={<CSVEditor />} />
 
         </Routes>
       </main>

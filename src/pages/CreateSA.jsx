@@ -1,19 +1,22 @@
 import React, { useState, useRef } from "react";
-import { ArrowLeft, Upload, X, FileText } from "lucide-react";
+import { ArrowLeft, Upload, X, FileText, ChevronUp, ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import { useData } from "../context/DataContext";
 
 const CreateSA = () => {
   const navigate = useNavigate();
-  const { fetchExams } = useData();
+  const { fetchExams, halls, fetchHalls } = useData();
 
   const [examName, setExamName] = useState("");
+  const [seriesName, setSeriesName] = useState("");
   const [seatingType, setSeatingType] = useState("");
   const [selectedYears, setSelectedYears] = useState("");
   const [examDate, setExamDate] = useState("");
-  const [mode, setMode] = useState("manual");
+  const [semType, setSemType] = useState("Even");
   const [isSubmit, setisSubmit] = useState(false);
+  const [hallDataSource, setHallDataSource] = useState("upload");
+  const [arrangedHalls, setArrangedHalls] = useState([]);
 
   // Changed to array to support multiple files
   const [studentFiles, setStudentFiles] = useState([]);
@@ -42,7 +45,7 @@ const CreateSA = () => {
   };
 
   async function createNotification() {
-    await fetch("https://cec-grd-backend.onrender.com/notification/create", {
+    await fetch("http://localhost:5001/notification/create", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -54,6 +57,49 @@ const CreateSA = () => {
       }),
     });
   }
+
+  const moveHall = (index, direction) => {
+    const newHalls = [...arrangedHalls];
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= newHalls.length) return;
+
+    [newHalls[index], newHalls[targetIndex]] = [newHalls[targetIndex], newHalls[index]];
+    setArrangedHalls(newHalls);
+  };
+
+  const shuffleHalls = () => {
+    const shuffled = [...arrangedHalls].sort(() => Math.random() - 0.5);
+    setArrangedHalls(shuffled);
+  };
+
+  const toggleHallSelection = (id) => {
+    setArrangedHalls(prev => prev.map(h =>
+      h.id === id ? { ...h, selected: !h.selected } : h
+    ));
+  };
+
+  const convertHallsToCSV = (hallsData) => {
+    if (!hallsData || hallsData.length === 0) return null;
+
+    // Header
+    const headers = ["name", "rows", "columns", "capacity"];
+    const csvRows = [headers.join(",")];
+
+    // Filter only active halls (should already be active if coming from arrangedHalls)
+    const activeHalls = hallsData.filter(h => h.status === "active");
+
+    activeHalls.forEach(hall => {
+      const row = [
+        hall.name,
+        hall.rows,
+        hall.columns,
+        hall.capacity
+      ];
+      csvRows.push(row.join(","));
+    });
+
+    return csvRows.join("\n");
+  };
 
   const handleFileUpload = (e, type) => {
     const files = e.target.files;
@@ -96,18 +142,48 @@ const CreateSA = () => {
 
     // Exam metadata
     formData.append("examName", examName);
+    formData.append("seriesName", seriesName);
     formData.append("seatingType", seatingType);
     formData.append("years", JSON.stringify(selectedYears));
     formData.append("type", seatingType);
-    formData.append("mode", mode);
+    formData.append("semType", semType);
     formData.append("examDate", examDate.toString()); // Keep toString() just in case
+
+
 
     // Handle Student Files (Single or Multiple)
     studentFiles.forEach((file) => {
       formData.append("students", file);
     });
 
-    if (hallFile) formData.append("halls", hallFile);
+    if (hallDataSource === "upload" && hallFile) {
+      formData.append("halls", hallFile);
+    } else if (hallDataSource === "management") {
+      const activeHalls = halls.filter(h => h.status === "active");
+      if (activeHalls.length === 0) {
+        Swal.fire({
+          icon: "error",
+          title: "No Active Halls",
+          text: "Please add or activate halls in Hall Management first.",
+        });
+        setisSubmit(false);
+        return;
+      }
+      const includedHalls = arrangedHalls.filter(h => h.selected);
+      if (includedHalls.length === 0) {
+        Swal.fire({
+          icon: "error",
+          title: "No Halls Selected",
+          text: "Please select at least one hall to include in the arrangement.",
+        });
+        setisSubmit(false);
+        return;
+      }
+      const csvData = convertHallsToCSV(includedHalls);
+      const blob = new Blob([csvData], { type: "text/csv" });
+      const virtualFile = new File([blob], "halls_from_management.csv", { type: "text/csv" });
+      formData.append("halls", virtualFile);
+    }
 
     const handleResponse = async (response) => {
       if (!response.ok) {
@@ -136,25 +212,25 @@ const CreateSA = () => {
 
     try {
       if (selectedYears.length > 1 && seatingType === "Normal") {
-        const response = await fetch("https://cec-grd-backend.onrender.com/TwoGenerateCommon", {
+        const response = await fetch("http://localhost:5001/TwoGenerateCommon", {
           method: "POST",
           body: formData,
         });
         await handleResponse(response);
       } else if (selectedYears.length == 1 && seatingType === "Normal") {
-        const response = await fetch("https://cec-grd-backend.onrender.com/singleGenerateCommon", {
+        const response = await fetch("http://localhost:5001/singleGenerateCommon", {
           method: "POST",
           body: formData,
         });
         await handleResponse(response);
       } else if (selectedYears.length > 1 && seatingType !== "Normal") {
-        const response = await fetch("https://cec-grd-backend.onrender.com/TwoGenerateElective", {
+        const response = await fetch("http://localhost:5001/TwoGenerateElective", {
           method: "POST",
           body: formData,
         });
         await handleResponse(response);
       } else {
-        const response = await fetch("https://cec-grd-backend.onrender.com/singleGenerateElective", {
+        const response = await fetch("http://localhost:5001/singleGenerateElective", {
           method: "POST",
           body: formData,
         });
@@ -189,6 +265,20 @@ const CreateSA = () => {
           <div className="grid grid-cols-2 gap-16">
             {/* Left Column */}
             <div className="space-y-9">
+              {/* Series Name */}
+              <div>
+                <label className="block text-[#262626] font-Pmed mb-2">
+                  Series Name (for Summary Printing) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={seriesName}
+                  onChange={(e) => setSeriesName(e.target.value)}
+                  placeholder="e.g. First Internal Examination"
+                  className="w-full px-4 py-3 border border-[#E6E6E6] rounded-lg font-Preg text-[14px] focus:outline-none focus:border-[#2D7FF9]"
+                />
+              </div>
+
               {/* Exam Name */}
               <div>
                 <label className="block text-[#262626] font-Pmed mb-2">
@@ -270,24 +360,24 @@ const CreateSA = () => {
 
                 <div>
                   <label className="block text-[#262626] font-Pmed mb-3">
-                    Mode of publish
+                    Type of sem
                   </label>
 
                   <div className="flex items-center gap-6">
-                    {["manual", "automatic"].map((item) => (
+                    {["Even", "Odd"].map((item) => (
                       <label
                         key={item}
                         className="flex items-center gap-2 font-Preg text-[#262626] capitalize"
                       >
                         <input
                           type="radio"
-                          name="mode"
+                          name="semType"
                           value={item}
-                          checked={mode === item}
-                          onChange={(e) => setMode(e.target.value)}
+                          checked={semType === item}
+                          onChange={(e) => setSemType(e.target.value)}
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500"
                         />
-                        {item.charAt(0).toUpperCase() + item.slice(1)}
+                        {item}
                       </label>
                     ))}
                   </div>
@@ -405,69 +495,196 @@ const CreateSA = () => {
                 </div>
               </div>
 
-              {/* Hall File (Remains Single Upload) */}
-              <div>
-                <label className="block text-[#262626] font-Pmed mb-2">
-                  Hall Details
+              {/* Hall Details */}
+              <div className="space-y-4">
+                <label className="block text-[#262626] font-Pmed">
+                  Hall Details <span className="text-red-500">*</span>
                 </label>
 
-                <div
-                  className={`border border-dashed rounded-lg px-6 py-4 text-center transition-colors
-                  ${hallFile
-                      ? "border-green-500 bg-green-50"
-                      : "border-[#E6E6E6] hover:border-[#2D7FF9]"
-                    }`}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    const file = e.dataTransfer.files[0];
-                    if (file) setHallFile(file);
-                  }}
-                >
-                  {!hallFile ? (
-                    <div className="flex flex-col items-center gap-1">
-                      <Upload size={24} className="text-[#737373]" />
-
-                      <p className="font-Pmed text-[#262626] text-[14px]">
-                        Choose a file or drag & drop
-                      </p>
-
-                      <p className="text-[#737373] text-[12px] mb-2">
-                        XLSX format, up to 20MB
-                      </p>
-
-                      <input
-                        ref={hallInputRef}
-                        type="file"
-                        id="hall-file"
-                        accept=".xlsx,.xls,.csv"
-                        onChange={(e) => handleFileUpload(e, "hall")}
-                        className="hidden"
-                      />
-
-                      <label
-                        htmlFor="hall-file"
-                        className="px-4 py-1.5 border border-[#E6E6E6] rounded-lg text-[14px] cursor-pointer hover:bg-[#F1F5F9]"
-                      >
-                        Browse File
-                      </label>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-between bg-white border border-green-500 rounded-lg px-4 py-2">
-                      <span className="text-[14px] text-green-700 truncate">
-                        {hallFile.name}
-                      </span>
-
-                      <button
-                        type="button"
-                        onClick={() => removeFile("hall")}
-                        className="p-1 rounded hover:bg-green-100"
-                      >
-                        <X size={16} className="text-green-600" />
-                      </button>
-                    </div>
-                  )}
+                <div className="flex gap-6 mb-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="hallSource"
+                      checked={hallDataSource === "upload"}
+                      onChange={() => setHallDataSource("upload")}
+                      className="accent-[#2D7FF9]"
+                    />
+                    <span className="font-Preg text-[#262626]">Upload CSV</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="hallSource"
+                      checked={hallDataSource === "management"}
+                      onChange={async () => {
+                        setHallDataSource("management");
+                        const res = await fetch("http://localhost:5001/halls");
+                        const data = await res.json();
+                        const activeHalls = (data.data || []).filter(h => h.status === "active");
+                        // Add 'selected' property to each hall
+                        const hallsWithSelection = activeHalls.map(h => ({ ...h, selected: true }));
+                        setArrangedHalls(hallsWithSelection);
+                      }}
+                      className="accent-[#2D7FF9]"
+                    />
+                    <span className="font-Preg text-[#262626]">Use Hall Management</span>
+                  </label>
                 </div>
+
+                {hallDataSource === "upload" ? (
+                  <div
+                    className={`border border-dashed rounded-lg px-6 py-4 text-center transition-colors
+                    ${hallFile
+                        ? "border-green-500 bg-green-50"
+                        : "border-[#E6E6E6] hover:border-[#2D7FF9]"
+                      }`}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const file = e.dataTransfer.files[0];
+                      if (file) setHallFile(file);
+                    }}
+                  >
+                    {!hallFile ? (
+                      <div className="flex flex-col items-center gap-1">
+                        <Upload size={24} className="text-[#737373]" />
+                        <p className="font-Pmed text-[#262626] text-[14px]">
+                          Choose a file or drag & drop
+                        </p>
+                        <p className="text-[#737373] text-[12px] mb-2">
+                          XLSX format, up to 20MB
+                        </p>
+                        <input
+                          ref={hallInputRef}
+                          type="file"
+                          id="hall-file"
+                          accept=".xlsx,.xls,.csv"
+                          onChange={(e) => handleFileUpload(e, "hall")}
+                          className="hidden"
+                        />
+                        <label
+                          htmlFor="hall-file"
+                          className="px-4 py-1.5 border border-[#E6E6E6] rounded-lg text-[14px] cursor-pointer hover:bg-[#F1F5F9]"
+                        >
+                          Browse File
+                        </label>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between bg-white border border-green-500 rounded-lg px-4 py-2">
+                        <span className="text-[14px] text-green-700 truncate">
+                          {hallFile.name}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => removeFile("hall")}
+                          className="p-1 rounded hover:bg-green-100"
+                        >
+                          <X size={16} className="text-green-600" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-blue-100 rounded-lg">
+                            <FileText size={20} className="text-blue-600" />
+                          </div>
+                          <div>
+                            <p className="font-Pmed text-blue-900 text-[14px]">
+                              Using Hall Management Data
+                            </p>
+                            <p className="text-blue-700 text-[12px]">
+                              {arrangedHalls.length} active halls selected
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={shuffleHalls}
+                          className="px-3 py-1.5 bg-blue-600 text-white text-[12px] rounded-lg hover:bg-blue-700 font-Pmed flex items-center gap-2"
+                        >
+                          Random Arrangement
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="max-h-80 overflow-y-auto border border-[#E6E6E6] rounded-lg bg-white">
+                      <table className="w-full text-left border-collapse">
+                        <thead className="bg-[#F8FAFC] border-b border-[#E6E6E6] sticky top-0 z-10">
+                          <tr>
+                            <th className="px-4 py-2 text-[12px] font-Pmed text-[#737373] w-12 text-center">Include</th>
+                            <th className="px-4 py-2 text-[12px] font-Pmed text-[#737373] w-8">#</th>
+                            <th className="px-4 py-2 text-[12px] font-Pmed text-[#737373]">Hall Name</th>
+                            <th className="px-4 py-2 text-[12px] font-Pmed text-[#737373] text-right">Capacity</th>
+                            <th className="px-4 py-2 text-[12px] font-Pmed text-[#737373] text-right">Cumulative</th>
+                            <th className="px-4 py-2 text-[12px] font-Pmed text-[#737373] w-24 text-center">Reorder</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(() => {
+                            let cumulativeActual = 0;
+                            return arrangedHalls.map((hall, index) => {
+                              if (hall.selected) {
+                                cumulativeActual += hall.capacity;
+                              }
+                              return (
+                                <tr
+                                  key={hall.id || index}
+                                  className={`border-b border-[#E6E6E6] last:border-0 hover:bg-[#F8FAFC] transition-colors ${!hall.selected ? "opacity-50 grayscale" : ""}`}
+                                >
+                                  <td className="px-4 py-3 text-center">
+                                    <input
+                                      type="checkbox"
+                                      checked={hall.selected}
+                                      onChange={() => toggleHallSelection(hall.id)}
+                                      className="accent-[#2D7FF9] w-4 h-4 cursor-pointer"
+                                    />
+                                  </td>
+                                  <td className="px-4 py-3 text-[12px] font-Pmed text-[#737373]">
+                                    {index + 1}.
+                                  </td>
+                                  <td className="px-4 py-3 text-[14px] font-Pmed text-[#262626]">
+                                    {hall.name}
+                                  </td>
+                                  <td className="px-4 py-3 text-[14px] text-right text-[#262626] font-Pmed">
+                                    {hall.capacity}
+                                  </td>
+                                  <td className="px-4 py-3 text-[14px] text-right text-[#2D7FF9] font-Pmed">
+                                    {hall.selected ? cumulativeActual : "-"}
+                                  </td>
+                                  <td className="px-4 py-3 text-center">
+                                    <div className="flex justify-center gap-1">
+                                      <button
+                                        type="button"
+                                        onClick={() => moveHall(index, "up")}
+                                        disabled={index === 0}
+                                        className="p-1 rounded hover:bg-[#F1F5F9] disabled:opacity-30"
+                                      >
+                                        <ChevronUp size={16} />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => moveHall(index, "down")}
+                                        disabled={index === arrangedHalls.length - 1}
+                                        className="p-1 rounded hover:bg-[#F1F5F9] disabled:opacity-30"
+                                      >
+                                        <ChevronDown size={16} />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            });
+                          })()}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

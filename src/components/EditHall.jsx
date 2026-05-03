@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { X, ChevronDown } from "lucide-react";
 
-const EditHall = ({ hall, onClose ,onUpdate}) => {
+const EditHall = ({ hall, onClose, onUpdate }) => {
   const [hallName, setHallName] = useState("");
   const [rows, setRows] = useState("");
   const [columns, setColumns] = useState("");
@@ -29,33 +29,33 @@ const EditHall = ({ hall, onClose ,onUpdate}) => {
   }, [onClose]);
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (!hallName || !rows || !columns) return;
+    if (!hallName || !rows || !columns) return;
 
-  const updatedHall = {
-    name: hallName,
-    rows: Number(rows),
-    columns: Number(columns),
-    capacity: Number(capacity),
-    status,
+    const updatedHall = {
+      name: hallName,
+      rows: Number(rows),
+      columns: Number(columns),
+      capacity: Number(capacity),
+      status,
+    };
+
+    try {
+      await fetch(`http://localhost:5001/halls/${hall.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedHall),
+      });
+
+      // Update parent state
+      onUpdate({ ...hall, ...updatedHall });
+
+      onClose();
+    } catch (err) {
+      console.error("Failed to update hall", err);
+    }
   };
-
-  try {
-    await fetch(`https://cec-grd-backend.onrender.com/halls/${hall.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updatedHall),
-    });
-
-    // Update parent state
-    onUpdate({ ...hall, ...updatedHall });
-
-    onClose();
-  } catch (err) {
-    console.error("Failed to update hall", err);
-  }
-};
 
 
   if (!hall) return null;
@@ -155,9 +155,8 @@ const EditHall = ({ hall, onClose ,onUpdate}) => {
                 className="w-full flex items-center justify-between border border-[#E6E6E6] text-[#262626] placeholder-[#737373] outline-none focus:border-[#2D7FF9] focus:ring-1 focus:ring-[#2D7FF9] hover:border-[#2D7FF9] rounded-lg px-4 py-2"
               >
                 <span
-                  className={`font-Pmed ${
-                    status === "active" ? "text-[#137333]" : "text-[#B3261E]"
-                  }`}
+                  className={`font-Pmed ${status === "active" ? "text-[#137333]" : "text-[#B3261E]"
+                    }`}
                 >
                   {status === "active" ? "Available" : "Maintenance"}
                 </span>

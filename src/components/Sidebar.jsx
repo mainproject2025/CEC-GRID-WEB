@@ -2,7 +2,7 @@ import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import logo from "../assets/images/Logo.svg";
 import pf from "../assets/images/profile.png";
-import { ClipboardList, Landmark, Bell, Settings, LogOut, HelpCircle, UserPlus } from "lucide-react";
+import { ClipboardList, Landmark, Bell, Settings, LogOut, HelpCircle, UserPlus, Info, Grid3X3 } from "lucide-react";
 
 const navItemClass = ({ isActive }) =>
   `flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 font-medium transition-all duration-150
@@ -66,6 +66,16 @@ const Sidebar = () => {
         <NavLink to="/app/help" className={navItemClass}>
           <HelpCircle size={20} />
           <span>Help & Documentation</span>
+        </NavLink>
+
+        <NavLink to="/app/about" className={navItemClass}>
+          <Info size={20} />
+          <span>About</span>
+        </NavLink>
+
+        <NavLink to="/app/csv-editor" className={navItemClass}>
+          <Grid3X3 size={20} />
+          <span>CSV Editor</span>
         </NavLink>
       </nav>
 
